@@ -79,7 +79,7 @@ psql -U postgres -d project_db -f db_setup.sql
 Projenin kök dizininde bir .env dosyası oluşturun ve güvenlik/veritabanı bilgilerinizi buraya girin. app.py dosyasının bu bilgileri .env üzerinden okuduğundan emin olun.
 
 
-# Veritabanı Ayarları
+#### Veritabanı Ayarları
 ````
 DB_HOST=localhost
 DB_NAME=project_db
@@ -87,12 +87,12 @@ DB_USER=postgres
 DB_PASS=kendi_veritabani_sifren
 DB_PORT=5432
 ````
-# Flask ve Güvenlik Ayarları
+#### Flask ve Güvenlik Ayarları
 ````
 FLASK_SECRET_KEY=cok_gizli_flask_anahtari
 ENCRYPTION_KEY=b"AES_256_ICIN_GECERLI_BASE64_ANAHTARI_BURAYA="
 ````
-# Google OAuth (Opsiyonel - Google Girişi İçin)
+#### Google OAuth (Opsiyonel - Google Girişi İçin)
 ````
 GOOGLE_CLIENT_ID=kendi_client_id_bilgin
 GOOGLE_CLIENT_SECRET=kendi_client_secret_bilgin
