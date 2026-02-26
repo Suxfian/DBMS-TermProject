@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{ company_name }} - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script> tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#2b8cee", "dark-bg": "#101922" } } } } </script>
+    <style>
+        .fade-out { opacity: 0; transition: opacity 0.5s ease; }
+        .log-enter { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-[#101922] text-white font-sans overflow-hidden flex h-screen">
+
+    <aside class="w-64 bg-[#111a22] border-r border-gray-800 flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+            <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+            <div><h1 class="font-bold text-sm">{{ company_name }}</h1><p class="text-[10px] text-gray-500 mt-0.5">Yönetim Paneli</p></div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center gap-3 p-3 bg-primary/20 text-primary rounded-lg transition">
+                <span class="material-symbols-outlined fill">dashboard</span> Genel Bakış
+            </a>
+            <a href="/orders" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">shopping_cart</span> Siparişler
+            </a>
+
+            {% if role != 'Muhasebe_Gorevlisi' %}
+            <a href="/products" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">inventory_2</span> Envanter
+            </a>
+            {% endif %}
+
+            {% if role == 'Sirket_Admin' or role == 'Super_Admin' %}
+            <a href="/integrations" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">link</span> Entegrasyon
+            </a>
+            {% endif %}
+
+            {% if role != 'Depo_Gorevlisi' %}
+            <a href="/reports" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">bar_chart</span> Raporlar
+            </a>
+            {% endif %}
+
+            <a href="/settings" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">settings</span> Sistem Ayarları
+            </a>
+
+            <a href="/logout" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg mt-auto">
+                <span class="material-symbols-outlined">logout</span> Çıkış Yap
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+        <header class="h-16 border-b border-gray-800 flex items-center justify-between px-8 bg-[#111a22]">
+            <h2 class="text-xl font-semibold">Dashboard</h2>
+            <div class="flex items-center gap-4"><span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded-full border border-green-500/30 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> Sistem Aktif</span></div>
+        </header>
+
+        <div class="absolute top-20 right-8 z-50 w-96">
+            {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+            <div class="flash-message p-4 rounded-lg shadow-lg mb-3 animate-fade-in flex items-start gap-3 border {{ 'bg-green-500/10 border-green-500/50 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/50 text-red-400' }}"><span class="material-symbols-outlined text-xl mt-0.5">info</span><div><p class="font-medium text-sm">{{ message }}</p></div></div>
+            {% endfor %} {% endif %} {% endwith %}
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-8 pb-48">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800"><p class="text-gray-400 text-sm mb-1">Bekleyen</p><h3 id="stat-pending" class="text-3xl font-bold">{{ pending_count }}</h3></div>
+                
+                {% if role != 'Muhasebe_Gorevlisi' %}
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800"><p class="text-gray-400 text-sm mb-1">Kritik Stok</p><h3 class="text-3xl font-bold text-red-400">{{ critical_stock }}</h3></div>
+                {% else %}
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800 opacity-50"><p class="text-gray-400 text-sm mb-1">Kritik Stok</p><h3 class="text-3xl font-bold text-gray-500">🔒</h3></div>
+                {% endif %}
+
+                {% if role != 'Depo_Gorevlisi' %}
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800"><p class="text-gray-400 text-sm mb-1">Gerçek Ciro (Teslim Edilen)</p><h3 id="stat-revenue" class="text-3xl font-bold text-green-400">{{ "{:,.2f}".format(total_revenue) }} ₺</h3></div>
+                {% else %}
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800 opacity-50"><p class="text-gray-400 text-sm mb-1">Ciro</p><h3 class="text-3xl font-bold text-gray-500">🔒</h3></div>
+                {% endif %}
+
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800"><p class="text-gray-400 text-sm mb-1">Ürün Çeşidi</p><h3 id="stat-sku" class="text-3xl font-bold">{{ total_sku }}</h3></div>
+            </div>
+
+            {% if role != 'Depo_Gorevlisi' %}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="lg:col-span-2 bg-[#192633] rounded-xl border border-gray-800 p-4">
+                    <h3 class="font-bold mb-4 ml-2">Son 7 Günlük Satış (Teslim Edilen)</h3>
+                    <canvas id="salesChart" height="200"></canvas>
+                </div>
+                <div class="bg-[#192633] rounded-xl border border-gray-800 p-4">
+                    <h3 class="font-bold mb-4 ml-2">Platform Dağılımı</h3>
+                    <canvas id="platformChart" height="200"></canvas>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="space-y-6">
+                    {% if role in ['Super_Admin', 'Sirket_Admin'] %}
+                    <div class="bg-[#192633] rounded-xl border border-gray-800 p-6 border-l-4 border-l-primary">
+                        <h3 class="font-bold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-primary">developer_mode</span> Simülatör</h3>
+                        <div class="space-y-3">
+                            <form action="/simulate_products" method="POST">
+                                <button type="submit" class="w-full flex items-center justify-between p-3 bg-blue-500/20 hover:bg-blue-500/40 rounded-lg border border-blue-500/50 hover:border-blue-400 group transition-all">
+                                    <span class="text-sm font-bold text-blue-300">Rastgele 5 Ürün Ekle (Min 50 Stok)</span>
+                                    <span class="material-symbols-outlined text-blue-300">inventory_2</span>
+                                </button>
+                            </form>
+                            
+                            <form action="/simulate_history" method="POST">
+                                <button type="submit" class="w-full flex items-center justify-between p-3 bg-purple-500/20 hover:bg-purple-500/40 rounded-lg border border-purple-500/50 hover:border-purple-400 group transition-all">
+                                    <span class="text-sm font-bold text-purple-300">Geçmiş Veri Üret (Son 7 Gün)</span>
+                                    <span class="material-symbols-outlined text-purple-300">history</span>
+                                </button>
+                            </form>
+                            
+                            <hr class="border-gray-700 my-2">
+                            
+                            <button type="button" onclick="simulateOrderJS('Trendyol')" class="w-full flex items-center justify-between p-3 bg-black/20 hover:bg-orange-500/20 rounded-lg border border-transparent hover:border-orange-500/50 group transition-all">
+                                <span class="text-sm font-medium">Trendyol Siparişi</span>
+                                <span class="material-symbols-outlined text-gray-600 group-hover:text-orange-400">send</span>
+                            </button>
+                            
+                            <button type="button" onclick="simulateOrderJS('Hepsiburada')" class="w-full flex items-center justify-between p-3 bg-black/20 hover:bg-orange-600/20 rounded-lg border border-transparent hover:border-orange-600/50 group transition-all">
+                                <span class="text-sm font-medium">Hepsiburada Siparişi</span>
+                                <span class="material-symbols-outlined text-gray-600 group-hover:text-orange-500">send</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="lg:col-span-2 bg-[#192633] rounded-xl border border-gray-800 overflow-hidden flex flex-col h-96">
+                    <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black/20">
+                        <h3 class="font-bold flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Canlı Sistem İzleme</h3>
+                        <span class="text-[10px] text-gray-500 font-mono">LIVE_STREAM_V1.0</span>
+                    </div>
+                    <div id="logContainer" class="p-4 overflow-y-auto flex-1 space-y-2 font-mono text-xs bg-black/40">
+                        <p class="text-center text-gray-600 mt-10">Sistem olayları bekleniyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- 1. VERİ YÖNETİMİ ---
+        let productData = {{ products | tojson | safe if products is defined else '[]' }};
+
+        if (!productData || productData.length === 0) {
+            console.log("Veri bulunamadı veya boş.");
+        }
+
+        // --- DEĞİŞKENLER ---
+        let currentRevenue = parseFloat("{{ total_revenue }}") || 0;
+        let pendingCount = parseInt("{{ pending_count }}") || 0;
+        let skuCount = parseInt("{{ total_sku }}") || 0;
+        let myPlatformChart = null;
+
+        setTimeout(()=>{document.querySelectorAll('.flash-message').forEach(e=>{e.classList.add('fade-out');setTimeout(()=>e.remove(),500)})},3000);
+        
+        // --- GRAFİKLER ---
+        fetch('/api/dashboard_charts').then(response => response.json()).then(data => {
+            if (data.sales_labels) {
+                new Chart(document.getElementById('salesChart'), { type: 'line', data: { labels: data.sales_labels, datasets: [{ label: 'Teslim Edilen Ciro', data: data.sales_values, borderColor: '#2b8cee', backgroundColor: 'rgba(43,140,238,0.1)', borderWidth: 2, fill: true, tension: 0.4 }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#333' } }, x: { grid: { display: false } } } } });
+                
+                const ctxPlatform = document.getElementById('platformChart');
+                myPlatformChart = new Chart(ctxPlatform, { type: 'doughnut', data: { labels: data.platform_labels, datasets: [{ data: data.platform_values, backgroundColor: ['#ea580c', '#d97706', '#2563eb', '#db2777'], borderWidth: 0 }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#888' } } } } });
+            }
+        });
+
+        // --- LOG YARDIMCISI ---
+        function addLog(message, type = 'INFO') {
+            const container = document.getElementById('logContainer');
+            if(container.innerHTML.includes('Sistem olayları bekleniyor')) container.innerHTML = '';
+            
+            const time = new Date().toLocaleTimeString('tr-TR');
+            const colorClass = type === 'ERROR' ? 'text-red-400 border-red-900/50' : 
+                               type === 'SUCCESS' ? 'text-green-400 border-green-900/50' : 
+                               type === 'WARNING' ? 'text-yellow-400 border-yellow-900/50' : 'text-blue-300 border-blue-900/50';
+
+            const html = `
+                <div class="log-enter flex gap-3 p-2 border-l-2 bg-white/5 rounded-r ${colorClass}">
+                    <span class="text-gray-500 font-bold">[${time}]</span>
+                    <span class="flex-1">${message}</span>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', html);
+        }
+
+        // --- CANLI SİPARİŞ SİMÜLASYONU (AJAX) ---
+        function simulateOrderJS(source) {
+            fetch('/simulate_order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source: source })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    pendingCount++;
+                    document.getElementById('stat-pending').innerText = pendingCount;
+                    addLog(`SİPARİŞ (${data.source}): ${data.customer} - ${data.product_name} (${data.price} TL)`, "SUCCESS");
+                    if(myPlatformChart) {
+                        const index = source === 'Trendyol' ? 0 : 1; 
+                        if(myPlatformChart.data.datasets[0].data[index] !== undefined) {
+                            myPlatformChart.data.datasets[0].data[index] += 1;
+                            myPlatformChart.update();
+                        }
+                    }
+                } else {
+                    addLog("HATA: " + data.message, "ERROR");
+                }
+            })
+            .catch(error => {
+                console.error("Fetch Hatası:", error);
+                addLog("Sunucu ile iletişim kurulamadı.", "ERROR");
+            });
+        }
+    </script>
+</body>
+</html>

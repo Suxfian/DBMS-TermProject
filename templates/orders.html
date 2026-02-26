@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Siparişler</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script> tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#2b8cee", "dark-bg": "#101922" } } } } </script>
+    <style>.fade-out { opacity: 0; transition: opacity 0.5s ease; }</style>
+</head>
+<body class="bg-[#101922] text-white font-sans flex h-screen">
+
+    <aside class="w-64 bg-[#111a22] border-r border-gray-800 flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+            <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+            <div><h1 class="font-bold text-sm">{{ company_name }}</h1><p class="text-[10px] text-gray-500 mt-0.5">Yönetim Paneli</p></div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">dashboard</span> Genel Bakış
+            </a>
+            <a href="/orders" class="flex items-center gap-3 p-3 bg-primary/20 text-primary rounded-lg transition">
+                <span class="material-symbols-outlined fill">shopping_cart</span> Siparişler
+            </a>
+
+            {% if role != 'Muhasebe_Gorevlisi' %}
+            <a href="/products" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">inventory_2</span> Envanter
+            </a>
+            {% endif %}
+
+            {% if role == 'Sirket_Admin' or role == 'Super_Admin' %}
+            <a href="/integrations" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">link</span> Entegrasyon
+            </a>
+            {% endif %}
+
+            {% if role != 'Depo_Gorevlisi' %}
+            <a href="/reports" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">bar_chart</span> Raporlar
+            </a>
+            {% endif %}
+
+            <a href="/settings" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition">
+                <span class="material-symbols-outlined">settings</span> Sistem Ayarları
+            </a>
+
+            <a href="/logout" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg mt-auto">
+                <span class="material-symbols-outlined">logout</span> Çıkış Yap
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h1 class="text-3xl font-bold mb-8">Sipariş Listesi</h1>
+        <div class="bg-[#192633] rounded-xl border border-gray-800 overflow-hidden">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-black/20 text-gray-400"><tr><th class="p-4">Sipariş No</th><th class="p-4">Müşteri</th><th class="p-4">Platform</th><th class="p-4">Durum</th><th class="p-4 text-right">Detay</th></tr></thead>
+                <tbody class="divide-y divide-gray-800 text-gray-300">
+                    {% for order in orders %}
+                    <tr class="hover:bg-gray-800/30 transition">
+                        <td class="p-4 font-mono text-blue-300">{{ order.order_no }}</td>
+                        <td class="p-4 font-bold">{{ order.customer }}</td>
+                        <td class="p-4 text-sm">{{ order.platform }}</td>
+                        <td class="p-4">
+                            <span class="px-3 py-1 rounded text-xs font-bold {{ order.status_class }}">
+                                {{ order.status }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-right">
+                            <a href="/order/{{ order.id }}" class="text-gray-400 hover:text-white flex justify-end items-center gap-1 transition">
+                                <span class="text-xs">Detay</span>
+                                <span class="material-symbols-outlined text-sm">arrow_forward_ios</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="p-8 text-center text-gray-500">Kayıtlı sipariş bulunamadı.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

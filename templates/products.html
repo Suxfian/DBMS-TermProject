@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Envanter Yönetimi</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script> tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#2b8cee", "dark-bg": "#101922" } } } } </script>
+    <style>.fade-out { opacity: 0; transition: opacity 0.5s ease; }</style>
+</head>
+<body class="bg-[#101922] text-white font-sans flex h-screen">
+
+    <aside class="w-64 bg-[#111a22] border-r border-gray-800 flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+            <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+            <div><h1 class="font-bold text-sm">{{ company_name }}</h1><p class="text-[10px] text-gray-500 mt-0.5">Yönetim Paneli</p></div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">dashboard</span> Genel Bakış</a>
+            <a href="/orders" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">shopping_cart</span> Siparişler</a>
+            
+            {% if role != 'Muhasebe_Gorevlisi' %}
+            <a href="/products" class="flex items-center gap-3 p-3 bg-primary/20 text-primary rounded-lg transition"><span class="material-symbols-outlined fill">inventory_2</span> Envanter</a>
+            {% endif %}
+            
+            {% if role == 'Sirket_Admin' or role == 'Super_Admin' %}
+            <a href="/integrations" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">link</span> Entegrasyon</a>
+            {% endif %}
+            
+            {% if role != 'Depo_Gorevlisi' %}
+            <a href="/reports" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">bar_chart</span> Raporlar</a>
+            {% endif %}
+            
+            <a href="/settings" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">settings</span> Sistem Ayarları</a>
+            
+            <a href="/logout" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg mt-auto"><span class="material-symbols-outlined">logout</span> Çıkış Yap</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div><h1 class="text-3xl font-bold">Envanter Yönetimi</h1><p class="text-gray-400">Ürünlerinizi, stok durumlarını ve fiyatlarını yönetin.</p></div>
+            <div class="flex gap-3">
+                {% if role == 'Sirket_Admin' or role == 'Depo_Gorevlisi' %}
+                <a href="/export_products" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition text-sm"><span class="material-symbols-outlined text-sm">download</span> Excel İndir</a>
+                <button onclick="document.getElementById('importModal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition text-sm"><span class="material-symbols-outlined text-sm">upload</span> Excel Yükle</button>
+                <div class="w-px bg-gray-700 mx-1"></div>
+                <button onclick="document.getElementById('addProductModal').classList.remove('hidden')" class="bg-primary hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shadow-lg shadow-primary/20 text-sm"><span class="material-symbols-outlined text-sm">add</span> Yeni Ürün</button>
+                {% endif %}
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+        <div class="flash-message p-4 mb-4 rounded-lg border {{ 'bg-green-500/10 border-green-500/50 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/50 text-red-400' }}">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <div class="bg-[#192633] rounded-xl border border-gray-800 overflow-hidden shadow-xl">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-black/20 text-gray-400">
+                    <tr>
+                        <th class="p-4">Ürün Detayı</th>
+                        <th class="p-4">Kodlar (SKU/MPN)</th>
+                        <th class="p-4">Ölçüler (E/B/Y/Kg)</th>
+                        <th class="p-4 text-right">Fiyat</th>
+                        <th class="p-4 text-center">Stok</th>
+                        <th class="p-4 text-right">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800 text-gray-300">
+                    {% for prod in products %}
+                    <tr class="hover:bg-gray-800/30 transition {{ 'border-l-4 border-l-purple-500 bg-purple-500/5' if prod.is_bundle else '' }}">
+                        <td class="p-4 max-w-xs">
+                            <div class="flex items-center gap-2">
+                                {% if prod.is_bundle %}<span class="px-2 py-0.5 bg-purple-600 text-white rounded text-[10px] font-bold">📦 SET</span>{% endif %}
+                                <div class="font-bold text-white text-base">{{ prod.name }}</div>
+                            </div>
+                            {% if prod.children %}
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                {% for child in prod.children %}
+                                <form action="/remove_from_bundle" method="POST" class="inline-block" onsubmit="return confirm('Bu parçayı setten çıkarmak istediğinize emin misiniz?');">
+                                    <input type="hidden" name="parent_prod_id" value="{{ prod.id }}">
+                                    <input type="hidden" name="child_inv_id" value="{{ child.child_inv_id }}">
+                                    <button class="px-2 py-0.5 bg-gray-700 hover:bg-red-900/30 text-gray-400 hover:text-red-400 rounded text-[10px] flex items-center gap-1 group border border-gray-600">
+                                        {{ child.name }} x{{ child.qty }} <span class="material-symbols-outlined text-[10px] hidden group-hover:block">close</span>
+                                    </button>
+                                </form>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if prod.parent %}
+                            <div class="mt-1"><span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[10px] border border-blue-500/20">🔗 {{ prod.parent }} içinde</span></div>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-xs font-mono text-gray-400">
+                            <div>SKU: <span class="text-blue-300">{{ prod.sku }}</span></div>
+                            {% if prod.mpn %}<div>MPN: {{ prod.mpn }}</div>{% endif %}
+                        </td>
+                        <td class="p-4 text-xs text-gray-500">{{ prod.dims }}</td>
+                        <td class="p-4 text-right font-bold text-green-400 text-lg">{{ prod.price }} ₺</td>
+                        <td class="p-4 text-center"><span class="px-3 py-1 rounded text-sm font-bold {{ 'bg-red-500/20 text-red-400' if prod.stock <= 5 else 'bg-green-500/20 text-green-400' }}">{{ prod.stock }}</span></td>
+                        <td class="p-4 text-right flex justify-end gap-2">
+                            {% if role == 'Sirket_Admin' or role == 'Depo_Gorevlisi' %}
+                            <button onclick="openBundleModal('{{ prod.id }}', '{{ prod.name }}')" class="p-2 bg-gray-800 hover:bg-purple-600 hover:text-white rounded-lg text-purple-400 transition border border-purple-500/20" title="Set Yap"><span class="material-symbols-outlined text-sm">layers</span></button>
+                            {% endif %}
+                            
+                            <button onclick='openEditModal({{ prod|tojson }})' class="p-2 bg-gray-800 hover:bg-blue-600 hover:text-white rounded-lg text-gray-400 transition border border-gray-700"><span class="material-symbols-outlined text-sm">edit</span></button>
+                            
+                            {% if role == 'Sirket_Admin' or role == 'Depo_Gorevlisi' %}
+                            <form action="/delete_product/{{ prod.id }}" method="POST" onsubmit="return confirm('⚠️ Bu ürünü silmek istediğinize emin misiniz?');"><button class="p-2 bg-gray-800 hover:bg-red-600 hover:text-white rounded-lg text-red-400 transition border border-gray-700"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}<tr><td colspan="6" class="p-8 text-center text-gray-500">Henüz ürün eklemediniz.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="addProductModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-[#192633] p-8 rounded-2xl w-full max-w-2xl border border-gray-700 shadow-2xl relative mt-10 mb-10">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="material-symbols-outlined">add_box</span> Yeni Ürün Ekle</h2>
+            <form action="/add_product" method="POST" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2"><label class="block text-sm text-gray-400 mb-1">Ürün Adı *</label><input type="text" name="name" required class="w-full rounded bg-black/20 border-gray-600 text-white"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Barkod (SKU) *</label><input type="text" name="sku" required class="w-full rounded bg-black/20 border-gray-600 text-white font-mono"></div>
+                    <div><label class="block text-sm text-gray-400 mb-1">Üretici Kodu (MPN)</label><input type="text" name="mpn" class="w-full rounded bg-black/20 border-gray-600 text-white font-mono"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 p-4 bg-black/20 rounded-lg border border-gray-700">
+                    <div><label class="block text-sm text-green-400 mb-1 font-bold">Liste Fiyatı (TL)</label><input type="number" step="0.01" name="price" value="0" class="w-full rounded bg-gray-800 border-gray-600 text-white text-lg font-bold"></div>
+                    <div><label class="block text-sm text-blue-400 mb-1 font-bold">Stok Adedi</label><input type="number" name="stock" value="0" class="w-full rounded bg-gray-800 border-gray-600 text-white text-lg font-bold"></div>
+                </div>
+                <div class="p-4 bg-black/20 rounded-lg border border-gray-700">
+                    <h3 class="text-sm font-bold text-gray-400 mb-3 border-b border-gray-700 pb-1">Fiziksel Özellikler (Desi için)</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div><label class="text-[10px] text-gray-500">En (cm)</label><input type="number" step="0.1" name="width" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                        <div><label class="text-[10px] text-gray-500">Boy (cm)</label><input type="number" step="0.1" name="height" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                        <div><label class="text-[10px] text-gray-500">Yükseklik (cm)</label><input type="number" step="0.1" name="length" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                        <div><label class="text-[10px] text-gray-500">Ağırlık (kg)</label><input type="number" step="0.1" name="weight" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-4"><button type="button" onclick="document.getElementById('addProductModal').classList.add('hidden')" class="flex-1 py-3 border border-gray-600 rounded text-gray-300">İptal</button><button class="flex-1 py-3 bg-primary rounded font-bold text-white">Kaydet</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editProductModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-[#192633] p-8 rounded-2xl w-full max-w-2xl border border-gray-700 shadow-2xl relative mt-10 mb-10">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><span class="material-symbols-outlined">edit</span> Ürün Düzenle</h2>
+            <form action="/edit_product" method="POST" class="space-y-4">
+                <input type="hidden" name="prod_id" id="edit_prod_id">
+                <input type="hidden" name="inv_id" id="edit_inv_id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2"><label class="block text-sm text-gray-400">Ürün Adı</label><input type="text" name="name" id="edit_name" required class="w-full rounded bg-black/20 border-gray-600 text-white"></div>
+                    <div><label class="block text-sm text-gray-400">Barkod (SKU)</label><input type="text" name="sku" id="edit_sku" required class="w-full rounded bg-black/20 border-gray-600 text-white font-mono"></div>
+                    <div><label class="block text-sm text-gray-400">MPN</label><input type="text" name="mpn" id="edit_mpn" class="w-full rounded bg-black/20 border-gray-600 text-white font-mono"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 p-4 bg-black/20 rounded-lg border border-gray-700">
+                    <div><label class="block text-sm text-green-400 font-bold">Fiyat (TL)</label><input type="number" step="0.01" name="price" id="edit_price" class="w-full rounded bg-gray-800 border-gray-600 text-white font-bold"></div>
+                    <div><label class="block text-sm text-blue-400 font-bold">Stok</label><input type="number" name="stock" id="edit_stock" class="w-full rounded bg-gray-800 border-gray-600 text-white font-bold"></div>
+                </div>
+                <div class="p-4 bg-black/20 rounded-lg border border-gray-700">
+                    <h3 class="text-sm font-bold text-gray-400 mb-2">Fiziksel Özellikler</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div><label class="text-[10px] text-gray-500">En</label><input type="number" step="0.1" name="width" id="edit_w" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                        <div><label class="text-[10px] text-gray-500">Boy</label><input type="number" step="0.1" name="height" id="edit_h" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                        <div><label class="text-[10px] text-gray-500">Yükseklik</label><input type="number" step="0.1" name="length" id="edit_l" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                        <div><label class="text-[10px] text-gray-500">Ağırlık</label><input type="number" step="0.1" name="weight" id="edit_kg" class="w-full rounded bg-gray-800 border-gray-600 text-white text-sm"></div>
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-4"><button type="button" onclick="document.getElementById('editProductModal').classList.add('hidden')" class="flex-1 py-3 border border-gray-600 rounded text-gray-300">İptal</button><button class="flex-1 py-3 bg-blue-600 rounded font-bold text-white">Güncelle</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="bundleModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl border border-gray-700 w-full max-w-md shadow-2xl relative">
+            <button onclick="document.getElementById('bundleModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            <h2 class="text-xl font-bold mb-1 flex items-center gap-2 text-purple-400"><span class="material-symbols-outlined">layers</span> Set Tanımla</h2>
+            <p class="text-sm text-gray-400 mb-6"><span id="bundleParentName" class="text-white font-bold">...</span> ürününe parça ekleyin.</p>
+            <form action="/create_bundle" method="POST" class="space-y-4">
+                <input type="hidden" name="parent_product_id" id="bundleParentId">
+                <div><label class="block text-sm text-gray-400 mb-1">İçerik Barkodu (SKU)</label><input type="text" name="child_sku" required placeholder="Örn: SKU-12345" class="w-full rounded bg-black/20 border-gray-600 text-white font-mono uppercase"></div>
+                <div><label class="block text-sm text-gray-400 mb-1">Adet</label><input type="number" name="quantity" value="1" min="1" required class="w-full rounded bg-black/20 border-gray-600 text-white font-bold text-center"></div>
+                <button class="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded font-bold text-white">Ekle</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="importModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl border border-gray-700 w-full max-w-lg">
+            <button onclick="document.getElementById('importModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            <h2 class="text-2xl font-bold mb-4">Toplu Yükle</h2>
+            <form action="/import_products" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <input type="file" name="excel_file" accept=".xlsx" required class="w-full text-sm text-gray-400 file:bg-blue-600 file:text-white file:border-0 file:rounded-full file:px-4 file:py-2">
+                <button class="w-full py-3 bg-primary rounded font-bold">Yükle</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        setTimeout(()=>{document.querySelectorAll('.flash-message').forEach(e=>{e.classList.add('fade-out');setTimeout(()=>e.remove(),500)})},3000);
+        function openEditModal(prod) {
+            document.getElementById('edit_prod_id').value = prod.id; document.getElementById('edit_inv_id').value = prod.inv_id;
+            document.getElementById('edit_name').value = prod.name; document.getElementById('edit_sku').value = prod.sku;
+            document.getElementById('edit_mpn').value = prod.mpn; document.getElementById('edit_price').value = prod.price; document.getElementById('edit_stock').value = prod.stock;
+            if(prod.raw_dims) {
+                document.getElementById('edit_w').value = prod.raw_dims.w; document.getElementById('edit_h').value = prod.raw_dims.h;
+                document.getElementById('edit_l').value = prod.raw_dims.l; document.getElementById('edit_kg').value = prod.raw_dims.kg;
+            }
+            document.getElementById('editProductModal').classList.remove('hidden');
+        }
+        function openBundleModal(id, name) { document.getElementById('bundleParentId').value = id; document.getElementById('bundleParentName').innerText = name; document.getElementById('bundleModal').classList.remove('hidden'); }
+    </script>
+</body>
+</html>

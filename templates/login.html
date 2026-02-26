@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>X Şirketi - Güvenli Giriş</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+      tailwind.config = { 
+        darkMode: "class", 
+        theme: { 
+            extend: { 
+                colors: { "primary": "#2b8cee", "dark-bg": "#101922" }, 
+                fontFamily: { "display": ["Inter", "sans-serif"] } 
+            }, 
+        }, 
+      }
+    </script>
+    <style>
+        .fade-out { opacity: 0; transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="font-display bg-[#101922] text-white flex min-h-screen w-full">
+
+    <div class="hidden lg:flex flex-1 flex-col items-center justify-center bg-[#111a22] p-10 relative overflow-hidden border-r border-gray-800">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+
+        <div class="relative z-10 text-center">
+            <div class="inline-flex items-center justify-center p-4 bg-primary/10 rounded-2xl mb-8 border border-primary/20 shadow-lg shadow-primary/10">
+                <span class="material-symbols-outlined text-primary text-5xl">hub</span>
+            </div>
+            <h1 class="text-4xl font-bold mb-4">Entegrasyon Yönetim Sistemi</h1>
+            <p class="text-gray-400 max-w-md mx-auto leading-relaxed">
+                Tüm pazaryerlerini, stokları ve siparişleri tek bir merkezden yönetin. 
+                Güvenli, hızlı ve ölçeklenebilir altyapı.
+            </p>
+            
+            <div class="mt-12 grid grid-cols-3 gap-6 text-center">
+                <div class="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                    <span class="block text-2xl font-bold text-white mb-1">AES-256</span>
+                    <span class="text-xs text-gray-500">Uçtan Uca Şifreleme</span>
+                </div>
+                <div class="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                    <span class="block text-2xl font-bold text-white mb-1">%99.9</span>
+                    <span class="text-xs text-gray-500">Uptime Garantisi</span>
+                </div>
+                <div class="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                    <span class="block text-2xl font-bold text-white mb-1">RBAC</span>
+                    <span class="text-xs text-gray-500">Rol Bazlı Yetki</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col justify-center items-center p-8 bg-[#101922]">
+        <div class="w-full max-w-md space-y-8">
+            
+            <div class="text-center lg:text-left">
+                <h2 class="text-3xl font-bold tracking-tight">Hoş Geldiniz</h2>
+                <p class="mt-2 text-sm text-gray-400">Yönetim paneline erişmek için giriş yapın.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="flash-message p-4 rounded-lg border flex items-center gap-3 {{ 'bg-green-500/10 border-green-500/50 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/50 text-red-400' }}">
+                        <span class="material-symbols-outlined text-xl">{{ 'check_circle' if category == 'success' else 'error' }}</span>
+                        <span class="text-sm font-medium">{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="bg-[#192633] p-8 rounded-2xl border border-gray-800 shadow-xl">
+                <form action="/" method="POST" class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Kurumsal E-posta</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-3 text-gray-500">mail</span>
+                            <input type="email" name="email" required placeholder="admin@sirket.com" class="w-full rounded-lg bg-black/20 border-gray-700 text-white focus:ring-primary focus:border-primary pl-10 py-3 transition-colors text-sm">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Şifre</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-3 text-gray-500">lock</span>
+                            <input type="password" name="password" required placeholder="••••••••" class="w-full rounded-lg bg-black/20 border-gray-700 text-white focus:ring-primary focus:border-primary pl-10 py-3 transition-colors text-sm">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-primary hover:bg-blue-600 rounded-lg font-bold text-white transition-all flex justify-center items-center gap-2 shadow-lg shadow-blue-500/20">
+                        <span>Güvenli Giriş Yap</span>
+                        <span class="material-symbols-outlined text-sm">login</span>
+                    </button>
+                </form>
+
+                <div class="mt-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-700"></div></div>
+                        <div class="relative flex justify-center text-xs uppercase"><span class="px-2 bg-[#192633] text-gray-500">veya</span></div>
+                    </div>
+
+                    <a href="/login/google" class="mt-6 w-full py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-lg font-bold transition-all flex justify-center items-center gap-3">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                        <span>Google ile Devam Et</span>
+                    </a>
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-gray-600">
+                Bu sisteme erişim loglanmaktadır. IP adresiniz kaydedilecektir.<br>
+                X Technology © 2025
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Mesajları 3 saniye sonra sil
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(el => {
+                el.classList.add('fade-out');
+                setTimeout(() => el.remove(), 500);
+            });
+        }, 3000);
+    </script>
+</body>
+</html>

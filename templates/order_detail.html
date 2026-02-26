@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Sipariş Detayı - {{ order[1] }}</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script> tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#2b8cee", "dark-bg": "#101922" } } } } </script>
+</head>
+<body class="bg-[#101922] text-white font-sans flex h-screen">
+
+    <aside class="w-64 bg-[#111a22] border-r border-gray-800 flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+            <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+            <div><h1 class="font-bold text-sm">{{ company_name }}</h1><p class="text-[10px] text-gray-500 mt-0.5">Yönetim Paneli</p></div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">dashboard</span> Genel Bakış</a>
+            <a href="/orders" class="flex items-center gap-3 p-3 bg-primary/20 text-primary rounded-lg transition"><span class="material-symbols-outlined fill">shopping_cart</span> Siparişler</a>
+            
+            {% if role != 'Muhasebe_Gorevlisi' %}
+            <a href="/products" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">inventory_2</span> Envanter</a>
+            {% endif %}
+            
+            {% if role == 'Sirket_Admin' or role == 'Super_Admin' %}
+            <a href="/integrations" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">link</span> Entegrasyon</a>
+            {% endif %}
+            
+            {% if role != 'Depo_Gorevlisi' %}
+            <a href="/reports" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">bar_chart</span> Raporlar</a>
+            {% endif %}
+            
+            <a href="/settings" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">settings</span> Sistem Ayarları</a>
+            
+            <a href="/logout" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg mt-auto"><span class="material-symbols-outlined">logout</span> Çıkış Yap</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        
+        <header class="flex items-center gap-4 mb-8">
+            <a href="/orders" class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 transition"><span class="material-symbols-outlined">arrow_back</span></a>
+            <div>
+                <h1 class="text-3xl font-bold flex items-center gap-3">
+                    {{ order[1] }}
+                    {% if order[4] == 400 %}
+                        <span class="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm border border-red-500/30">İptal Edildi</span>
+                    {% elif order[4] == 300 %}
+                        <span class="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-sm border border-green-500/30">Teslim Edildi</span>
+                    {% else %}
+                        <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm border border-blue-500/30">{{ status_map[order[4]] }}</span>
+                    {% endif %}
+                </h1>
+                <p class="text-gray-400 text-sm mt-1">{{ order[5].strftime('%d %B %Y, %H:%M') }} tarihinde oluşturuldu.</p>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="mb-6 p-4 rounded-lg border {{ 'bg-green-500/10 border-green-500/50 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/50 text-red-400' }}">
+                  {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="bg-[#192633] rounded-xl border border-gray-800 overflow-hidden">
+                    <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                        <h3 class="font-bold flex items-center gap-2"><span class="material-symbols-outlined text-gray-400">shopping_bag</span> Sipariş İçeriği</h3>
+                        <span class="text-sm text-gray-400">{{ items|length }} Ürün</span>
+                    </div>
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-black/20 text-gray-400">
+                            <tr>
+                                <th class="p-4">Ürün Adı</th>
+                                <th class="p-4 text-center">Adet</th>
+                                <th class="p-4 text-right">Birim Fiyat</th>
+                                <th class="p-4 text-right">Toplam</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+                            {% for item in items %}
+                            <tr>
+                                <td class="p-4 font-bold">{{ item[0] }}</td>
+                                <td class="p-4 text-center text-gray-400">{{ item[1] }}</td>
+                                <td class="p-4 text-right text-gray-400">{{ "{:,.2f}".format(item[2]) }} ₺</td>
+                                <td class="p-4 text-right font-mono">{{ "{:,.2f}".format(item[3]) }} ₺</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-primary/5 border-t border-gray-800">
+                            <tr>
+                                <td colspan="3" class="p-4 text-right font-bold text-gray-400">Genel Toplam</td>
+                                <td class="p-4 text-right font-bold text-xl text-primary">{{ "{:,.2f}".format(order[3]) }} ₺</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800">
+                    <h3 class="font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-gray-400">local_shipping</span> Teslimat Bilgileri</h3>
+                    <div class="grid grid-cols-2 gap-6 text-sm">
+                        <div>
+                            <p class="text-gray-500 mb-1 text-xs uppercase font-bold">Müşteri</p>
+                            <p class="text-white font-bold">{{ order[2] }}</p>
+                            <p class="text-gray-400 mt-1">{{ order[12] }} (TCKN)</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 mb-1 text-xs uppercase font-bold">Adres</p>
+                            <p class="text-white">{{ order[10] }}</p>
+                            <p class="text-gray-400">{{ order[11] }} / {{ order[6] }}</p>
+                        </div>
+                        <div class="pt-4 border-t border-gray-700">
+                            <p class="text-gray-500 mb-1 text-xs uppercase font-bold">Kargo Firması</p>
+                            <p class="text-white font-bold">{{ order[9] }}</p>
+                            <p class="text-gray-400 text-xs mt-1">Takip No: <span class="font-mono text-white">{{ order[7] if order[7] else 'Bekleniyor' }}</span></p>
+                        </div>
+                        <div class="pt-4 border-t border-gray-700">
+                            <p class="text-gray-500 mb-1 text-xs uppercase font-bold">Paket Bilgisi</p>
+                            <p class="text-white">{{ order[13] if order[13] else '1' }} Desi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800">
+                    <h3 class="font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-gray-400">bolt</span> İşlemler</h3>
+                    <div class="flex flex-col gap-3">
+                        <a href="/invoice/{{ order[0] }}" target="_blank" class="w-full bg-gray-800 hover:bg-gray-700 text-white p-4 rounded-lg flex items-center justify-between group transition border border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-gray-400 group-hover:text-white">receipt_long</span>
+                                <div class="text-left"><p class="font-bold text-sm">Fatura Görüntüle</p><p class="text-xs text-gray-500">Resmi e-Arşiv faturası</p></div>
+                            </div>
+                            <span class="material-symbols-outlined text-gray-500">open_in_new</span>
+                        </a>
+
+                        {% if order[4] != 400 and order[4] != 300 %}
+                        
+                            {% if order[4] == 100 %}
+                            <form action="/order/{{ order[0] }}" method="POST">
+                                <input type="hidden" name="new_status" value="101">
+                                <button class="w-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 p-4 rounded-lg flex items-center justify-center gap-2 transition group">
+                                    <span class="material-symbols-outlined group-hover:scale-110 transition">inventory</span>
+                                    <div class="text-left"><p class="font-bold text-sm">Siparişi Hazırla</p><p class="text-[10px] opacity-70">Depoya ilet</p></div>
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if order[4] == 101 %}
+                            <form action="/order/{{ order[0] }}" method="POST">
+                                <input type="hidden" name="new_status" value="200">
+                                <button class="w-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 p-4 rounded-lg flex items-center justify-center gap-2 transition group">
+                                    <span class="material-symbols-outlined group-hover:scale-110 transition">local_shipping</span>
+                                    <div class="text-left"><p class="font-bold text-sm">Paketle ve Kargola</p><p class="text-[10px] opacity-70">Etiket oluşturulur</p></div>
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if order[4] == 200 %}
+                            <form action="/order/{{ order[0] }}" method="POST">
+                                <input type="hidden" name="new_status" value="300">
+                                <button class="w-full bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 p-4 rounded-lg flex items-center justify-center gap-2 transition group">
+                                    <span class="material-symbols-outlined group-hover:scale-110 transition">check_circle</span>
+                                    <div class="text-left"><p class="font-bold text-sm">Teslim Edildi İşaretle</p><p class="text-[10px] opacity-70">Süreç tamamlanır</p></div>
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            <form action="/order/{{ order[0] }}" method="POST" onsubmit="return confirm('Bu siparişi iptal etmek istediğinize emin misiniz? Stoklar geri iade edilecektir.');">
+                                <input type="hidden" name="new_status" value="400">
+                                <button class="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-500 p-4 rounded-lg flex items-center justify-center gap-2 transition group">
+                                    <span class="material-symbols-outlined group-hover:scale-110 transition">cancel</span>
+                                    <div class="text-left"><p class="font-bold text-sm">Siparişi İptal Et</p><p class="text-[10px] opacity-70">Stoklar iade edilir</p></div>
+                                </button>
+                            </form>
+                        
+                        {% endif %}
+                        
+                        {% if order[4] == 400 %}
+                        <div class="w-full bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-lg text-center">
+                            <p class="font-bold flex items-center justify-center gap-2 text-sm"><span class="material-symbols-outlined text-lg">block</span> İptal Edildi</p>
+                            <p class="text-[10px] mt-1 opacity-70">Bu siparişin stokları envantere geri yüklendi.</p>
+                        </div>
+                        {% endif %}
+
+                        {% if order[4] == 300 %}
+                        <div class="w-full bg-green-500/10 border border-green-500/50 text-green-400 p-4 rounded-lg text-center">
+                            <p class="font-bold flex items-center justify-center gap-2 text-sm"><span class="material-symbols-outlined text-lg">task_alt</span> Tamamlandı</p>
+                            <p class="text-[10px] mt-1 opacity-70">Sipariş süreci başarıyla bitti.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800 h-fit">
+                    <h3 class="font-bold mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-gray-400">history</span> İşlem Geçmişi</h3>
+                    <div class="relative pl-4 border-l border-gray-700 space-y-8">
+                        {% for h in history %}
+                        <div class="relative">
+                            <span class="absolute -left-[21px] top-1 w-3 h-3 rounded-full {{ 'bg-red-500' if h[0] == 400 else 'bg-primary' }} border-2 border-[#192633]"></span>
+                            <p class="text-sm font-bold text-white">{{ status_map[h[0]] }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ h[1].strftime('%d.%m.%Y %H:%M:%S') }}</p>
+                        </div>
+                        {% else %}
+                        <p class="text-gray-500 text-sm">Henüz işlem kaydı yok.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Sistem Ayarları</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script> tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#2b8cee", "dark-bg": "#101922" } } } } </script>
+    <style>.fade-out { opacity: 0; transition: opacity 0.5s ease; }</style>
+</head>
+<body class="bg-[#101922] text-white font-sans flex h-screen">
+
+    <aside class="w-64 bg-[#111a22] border-r border-gray-800 flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+            <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+            <div><h1 class="font-bold text-sm">{{ company_name }}</h1><p class="text-[10px] text-gray-500 mt-0.5">Yönetim Paneli</p></div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">dashboard</span> Genel Bakış</a>
+            <a href="/orders" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">shopping_cart</span> Siparişler</a>
+            
+            {% if role != 'Muhasebe_Gorevlisi' %}
+            <a href="/products" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">inventory_2</span> Envanter</a>
+            {% endif %}
+            
+            {% if role == 'Sirket_Admin' or role == 'Super_Admin' %}
+            <a href="/integrations" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">link</span> Entegrasyon</a>
+            {% endif %}
+            
+            {% if role != 'Depo_Gorevlisi' %}
+            <a href="/reports" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">bar_chart</span> Raporlar</a>
+            {% endif %}
+            
+            <a href="/settings" class="flex items-center gap-3 p-3 bg-primary/20 text-primary rounded-lg transition"><span class="material-symbols-outlined fill">settings</span> Sistem Ayarları</a>
+            
+            <a href="/logout" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg mt-auto"><span class="material-symbols-outlined">logout</span> Çıkış Yap</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div><h1 class="text-3xl font-bold">Ayarlar</h1><p class="text-gray-400">Hesap ve sistem yapılandırması.</p></div>
+            <span class="px-3 py-1 bg-gray-800 rounded text-xs text-gray-400 border border-gray-700">Oturum: {{ user_name }} ({{ role.replace('_', ' ') }})</span>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+        <div class="flash-message p-4 mb-4 rounded-lg border {{ 'bg-green-500/10 border-green-500/50 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/50 text-red-400' }}">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <div class="bg-[#192633] p-6 rounded-xl border border-gray-800 mb-8 max-w-xl">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">lock</span> Güvenlik</h3>
+            <form action="/settings" method="POST" class="space-y-4">
+                <input type="hidden" name="action" value="change_password">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-400">Yeni Şifre</label>
+                        <input type="password" name="new_password" required class="w-full rounded bg-black/20 border-gray-700 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">Şifre Tekrar</label>
+                        <input type="password" name="confirm_password" required class="w-full rounded bg-black/20 border-gray-700 text-sm text-white">
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-500 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[10px]">info</span>
+                    En az 8 karakter, 1 büyük harf, 1 küçük harf ve 1 özel karakter (!@#$ vb.) içermelidir.
+                </p>
+                <button class="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded font-bold transition text-sm">Şifremi Güncelle</button>
+            </form>
+        </div>
+
+        {% if role == 'Sirket_Admin' or role == 'Super_Admin' %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-gray-800 pt-8">
+            
+            <div class="space-y-8">
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">group</span> Personel Yönetimi</h3>
+                    <form action="/settings" method="POST" class="space-y-4 mb-6">
+                        <input type="hidden" name="action" value="add_staff">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-xs text-gray-400">Ad</label><input type="text" name="staff_name" required class="w-full rounded bg-black/20 border-gray-700 text-sm"></div>
+                            <div><label class="text-xs text-gray-400">Soyad</label><input type="text" name="staff_surname" required class="w-full rounded bg-black/20 border-gray-700 text-sm"></div>
+                        </div>
+                        <div><label class="text-xs text-gray-400">E-posta</label><input type="email" name="staff_email" required class="w-full rounded bg-black/20 border-gray-700 text-sm"></div>
+                        <div>
+                            <label class="text-xs text-gray-400">Geçici Şifre</label>
+                            <input type="password" name="staff_pass" required class="w-full rounded bg-black/20 border-gray-700 text-sm">
+                            <p class="text-[10px] text-gray-500 mt-1">Min: 8 karakter, A-Z, a-z, sembol.</p>
+                        </div>
+                        <div><label class="text-xs text-gray-400">Yetki</label>
+                            <select name="staff_role" class="w-full rounded bg-black/20 border-gray-700 text-sm">
+                                <option value="Depo_Gorevlisi">Depo Sorumlusu (Ürün/Stok/Sipariş)</option>
+                                <option value="Muhasebe_Gorevlisi">Muhasebe (Fatura/Rapor)</option>
+                                <option value="Sirket_Admin">Şirket Yöneticisi (Tam Yetki)</option>
+                            </select>
+                        </div>
+                        <button class="w-full py-2 bg-primary hover:bg-blue-600 rounded font-bold transition">Personel Ekle</button>
+                    </form>
+                    <h4 class="text-sm font-bold text-gray-400 mb-2 border-t border-gray-700 pt-4">Mevcut Personel</h4>
+                    <div class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scroll">
+                        {% for staff in staff_list %}
+                        <div class="flex items-center justify-between p-2 bg-black/20 rounded border border-gray-700 hover:bg-gray-800 transition">
+                            <div><p class="text-xs font-bold text-white">{{ staff[0] }} {{ staff[1] }}</p><p class="text-[10px] text-gray-500">{{ staff[2] }}</p></div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] px-2 py-1 bg-gray-700 rounded text-gray-300">{{ staff[3].replace('_', ' ') }}</span>
+                                {% if staff[5]|string != user_id|string %}
+                                <form action="/delete_staff/{{ staff[5] }}" method="POST" onsubmit="return confirm('Silinsin mi?');"><button class="text-red-400 hover:text-red-300"><span class="material-symbols-outlined text-sm">delete</span></button></form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% else %}<p class="text-xs text-gray-500 text-center py-2">Henüz personel eklenmedi.</p>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="bg-[#192633] p-6 rounded-xl border border-gray-800">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-purple-400">build</span> Sistem Bakımı</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <form action="/settings" method="POST"><input type="hidden" name="action" value="backup_db"><button class="w-full p-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-left transition group"><span class="material-symbols-outlined text-green-500 mb-2 group-hover:scale-110 transition">database</span><h4 class="font-bold text-sm">Yedek Al</h4></button></form>
+                        <form action="/settings" method="POST" onsubmit="return confirm('Loglar silinsin mi?');"><input type="hidden" name="action" value="clear_cache"><button class="w-full p-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-left transition group"><span class="material-symbols-outlined text-orange-500 mb-2 group-hover:scale-110 transition">delete_sweep</span><h4 class="font-bold text-sm">Önbellek Temizle</h4></button></form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-black rounded-xl border border-gray-800 flex flex-col h-full overflow-hidden shadow-2xl">
+                <div class="p-4 bg-gray-900 border-b border-gray-800 flex justify-between items-center">
+                    <h3 class="font-mono text-sm text-green-400 flex items-center gap-2"><span class="material-symbols-outlined text-sm animate-pulse">terminal</span> CANLI SİSTEM LOGLARI</h3>
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span><span class="text-[10px] text-gray-500">BAĞLI</span></div>
+                </div>
+                <div class="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-2 bg-black/50" id="log-container">
+                    <p class="text-gray-600">Sistem izleme başlatılıyor...</p>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            function fetchLogs() {
+                fetch('/api/get_logs').then(r=>r.json()).then(d=>{
+                    const c=document.getElementById('log-container'); c.innerHTML='';
+                    if(d.length===0){c.innerHTML='<p class="text-gray-600">Kayıt yok.</p>';return;}
+                    d.forEach(l=>{
+                        const div=document.createElement('div');
+                        let cl='text-gray-300'; if(l.type==='ERROR')cl='text-red-400'; else if(l.type==='WARNING')cl='text-yellow-400'; else if(l.type==='SUCCESS')cl='text-green-400';
+                        div.className=`flex gap-3 border-b border-gray-800/50 pb-1 mb-1 ${cl}`;
+                        div.innerHTML=`<span class="opacity-50 w-16">${l.time}</span><span>${l.message}</span>`;
+                        c.appendChild(div);
+                    });
+                });
+            }
+            setInterval(fetchLogs, 3000); fetchLogs();
+        </script>
+        {% endif %} 
+        
+        <script>setTimeout(()=>{document.querySelectorAll('.flash-message').forEach(e=>{e.classList.add('fade-out');setTimeout(()=>e.remove(),500)})},3000);</script>
+    </main>
+</body>
+</html>

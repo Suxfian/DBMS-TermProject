@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Müşteri Yönetimi</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script> tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#2b8cee", "dark-bg": "#101922" } } } } </script>
+    <style>.fade-out { opacity: 0; transition: opacity 0.5s ease; }</style>
+</head>
+<body class="bg-[#101922] text-white font-sans flex h-screen">
+
+    <aside class="w-64 bg-[#111a22] border-r border-gray-800 flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+            <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+            <div><h1 class="font-bold text-sm">X HQ</h1><p class="text-[10px] text-yellow-500 mt-0.5">Süper Admin Paneli</p></div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center gap-3 p-3 bg-primary/20 text-primary rounded-lg"><span class="material-symbols-outlined fill">domain</span> Müşteri Firmalar</a>
+            <a href="/settings" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg"><span class="material-symbols-outlined">settings</span> Sistem Ayarları</a>
+            <a href="/logout" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg mt-auto"><span class="material-symbols-outlined">logout</span> Çıkış Yap</a>
+        </nav>
+        <div class="p-4 border-t border-gray-800"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center font-bold text-sm">{{ user_name[0] }}</div><div class="overflow-hidden"><p class="text-sm font-medium truncate">{{ user_name }}</p><p class="text-xs text-gray-500 truncate">{{ role }}</p></div></div></div>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div><h1 class="text-3xl font-bold">Müşteri Yönetimi</h1><p class="text-gray-400">Aktif müşteri firmaların listesi.</p></div>
+            <button onclick="document.getElementById('newCompanyModal').classList.remove('hidden')" class="bg-primary hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2"><span class="material-symbols-outlined">add_business</span> Yeni Müşteri</button>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+        <div class="flash-message p-4 mb-4 rounded-lg border {{ 'bg-green-500/10 border-green-500/50 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/50 text-red-400' }}">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <div class="bg-[#192633] rounded-xl border border-gray-800 overflow-hidden shadow-xl">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-black/20 text-gray-400"><tr><th class="p-4">Firma</th><th class="p-4">Vergi No</th><th class="p-4">Kullanıcı</th><th class="p-4">Tarih</th><th class="p-4 text-right">İşlem</th></tr></thead>
+                <tbody class="divide-y divide-gray-800 text-gray-300">
+                    {% for comp in companies %}
+                    <tr class="hover:bg-gray-800/30">
+                        <td class="p-4 font-bold text-white">{{ comp[1] }}</td><td class="p-4 font-mono">{{ comp[2] }}</td>
+                        <td class="p-4">
+                            <button onclick="openUserModal('{{ comp[0] }}', '{{ comp[1] }}')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-full text-xs flex items-center gap-1 transition">
+                                <span class="material-symbols-outlined text-[10px]">person</span> {{ comp[4] }} Personel
+                            </button>
+                        </td>
+                        <td class="p-4">{{ comp[3].strftime('%d.%m.%Y') }}</td>
+                        <td class="p-4 text-right flex justify-end gap-2">
+                            <button onclick="openEditModal('{{ comp[0] }}','{{ comp[1] }}','{{ comp[2] }}')" class="p-2 bg-gray-800 hover:text-white rounded"><span class="material-symbols-outlined">edit</span></button>
+                            {% if comp[0]|string != session['company_id']|string %}
+                            <form action="/delete_company/{{ comp[0] }}" method="POST" onsubmit="return confirm('Silinsin mi?')"><button class="p-2 bg-gray-800 hover:text-red-400 rounded"><span class="material-symbols-outlined">delete</span></button></form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="newCompanyModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl w-full max-w-lg border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4">Yeni Müşteri</h2>
+            <form action="/create_company" method="POST" class="space-y-4">
+                <input type="text" name="comp_name" placeholder="Firma Adı" required class="w-full rounded bg-black/20 border-gray-600 text-white">
+                <input type="text" name="tax_no" placeholder="Vergi No (10 Hane)" required maxlength="10" class="w-full rounded bg-black/20 border-gray-600 text-white">
+                <input type="email" name="admin_email" placeholder="Email" required class="w-full rounded bg-black/20 border-gray-600 text-white">
+                <input type="text" name="admin_pass" value="123456" required class="w-full rounded bg-black/20 border-gray-600 text-white">
+                <div class="flex gap-2"><button type="button" onclick="this.closest('#newCompanyModal').classList.add('hidden')" class="flex-1 py-2 border border-gray-600 rounded">İptal</button><button class="flex-1 py-2 bg-primary rounded">Oluştur</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editCompanyModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl w-full max-w-lg border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4">Düzenle</h2>
+            <form action="/edit_company" method="POST" class="space-y-4">
+                <input type="hidden" name="comp_id" id="edit_comp_id">
+                <input type="text" name="edit_comp_name" id="edit_comp_name" required class="w-full rounded bg-black/20 border-gray-600 text-white">
+                <input type="text" name="edit_tax_no" id="edit_tax_no" required maxlength="10" class="w-full rounded bg-black/20 border-gray-600 text-white">
+                <div class="flex gap-2"><button type="button" onclick="this.closest('#editCompanyModal').classList.add('hidden')" class="flex-1 py-2 border border-gray-600 rounded">İptal</button><button class="flex-1 py-2 bg-blue-600 rounded">Güncelle</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="userModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl w-full max-w-lg border border-gray-700 relative">
+            <button onclick="document.getElementById('userModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            <h2 class="text-2xl font-bold mb-1" id="modalCompanyName">...</h2>
+            <p class="text-sm text-gray-500 mb-4">Kayıtlı Personel Listesi</p>
+            
+            <div id="userListContainer" class="space-y-2 max-h-60 overflow-y-auto">
+                <p class="text-center text-gray-500">Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        setTimeout(()=>{document.querySelectorAll('.flash-message').forEach(e=>{e.classList.add('fade-out');setTimeout(()=>e.remove(),500)})},3000);
+        function openEditModal(id,n,t){document.getElementById('edit_comp_id').value=id;document.getElementById('edit_comp_name').value=n;document.getElementById('edit_tax_no').value=t;document.getElementById('editCompanyModal').classList.remove('hidden')}
+        
+        // Kullanıcı Listesi Getir
+        function openUserModal(companyId, companyName) {
+            document.getElementById('modalCompanyName').innerText = companyName;
+            document.getElementById('userModal').classList.remove('hidden');
+            const container = document.getElementById('userListContainer');
+            container.innerHTML = '<p class="text-center text-gray-500">Yükleniyor...</p>';
+
+            fetch(`/get_company_users/${companyId}`)
+                .then(response => response.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    if(data.length === 0) {
+                        container.innerHTML = '<p class="text-center text-gray-500">Kullanıcı bulunamadı.</p>';
+                        return;
+                    }
+                    data.forEach(user => {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center justify-between p-3 bg-black/20 rounded border border-gray-700';
+                        div.innerHTML = `
+                            <div>
+                                <p class="text-sm font-bold text-white">${user.name}</p>
+                                <p class="text-xs text-gray-500">${user.email}</p>
+                            </div>
+                            <span class="text-xs px-2 py-1 bg-gray-800 rounded text-gray-300 border border-gray-600">${user.role.replace('_', ' ')}</span>
+                        `;
+                        container.appendChild(div);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    container.innerHTML = '<p class="text-center text-red-400">Hata oluştu.</p>';
+                });
+        }
+    </script>
+</body>
+</html>

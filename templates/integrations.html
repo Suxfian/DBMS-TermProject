@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <title>Entegrasyonlar</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script> tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#2b8cee", "dark-bg": "#101922" } } } } </script>
+    <style>.fade-out { opacity: 0; transition: opacity 0.5s ease; }</style>
+</head>
+<body class="bg-[#101922] text-white font-sans flex h-screen">
+
+    <aside class="w-64 bg-[#111a22] border-r border-gray-800 flex flex-col">
+        <div class="p-6 flex items-center gap-3 border-b border-gray-800"><span class="material-symbols-outlined text-primary text-3xl">hub</span><div><h1 class="font-bold text-sm">{{ company_name }}</h1><p class="text-[10px] text-gray-500 mt-0.5">Yönetim Paneli</p></div></div>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">dashboard</span> Genel Bakış</a>
+            <a href="/orders" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">shopping_cart</span> Siparişler</a>
+            
+            {% if role != 'Muhasebe_Gorevlisi' %}
+            <a href="/products" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">inventory_2</span> Envanter</a>
+            {% endif %}
+            
+            {% if role == 'Sirket_Admin' or role == 'Super_Admin' %}
+            <a href="/integrations" class="flex items-center gap-3 p-3 bg-primary/20 text-primary rounded-lg transition"><span class="material-symbols-outlined fill">link</span> Entegrasyon</a>
+            {% endif %}
+            
+            {% if role != 'Depo_Gorevlisi' %}
+            <a href="/reports" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">bar_chart</span> Raporlar</a>
+            {% endif %}
+            
+            <a href="/settings" class="flex items-center gap-3 p-3 text-gray-400 hover:bg-gray-800 rounded-lg transition"><span class="material-symbols-outlined">settings</span> Sistem Ayarları</a>
+            
+            <a href="/logout" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/10 rounded-lg mt-auto"><span class="material-symbols-outlined">logout</span> Çıkış Yap</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div><h1 class="text-3xl font-bold">Pazaryeri Entegrasyonları</h1><p class="text-gray-400">Ürünlerinizi pazaryerlerine bağlayın.</p></div>
+            <button onclick="document.getElementById('addMarketModal').classList.remove('hidden')" class="bg-primary hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition"><span class="material-symbols-outlined">add_business</span> Yeni Mağaza Ekle</button>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+        <div class="flash-message p-4 mb-4 rounded-lg border {{ 'bg-green-500/10 border-green-500/50 text-green-400' if category == 'success' else 'bg-blue-500/10 border-blue-500/50 text-blue-400' }}">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <div class="bg-[#192633] rounded-xl border border-gray-800 overflow-hidden shadow-xl overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-black/20 text-gray-400">
+                    <tr>
+                        <th class="p-4 min-w-[200px] sticky left-0 bg-[#111a22] z-10 shadow-lg">Ürün Bilgisi</th>
+                        <th class="p-4 text-center">Stok</th>
+                        {% for store in stores %}
+                        <th class="p-4 text-center min-w-[150px] border-l border-gray-700 relative group">
+                            {{ store.name }}
+                            <div class="absolute top-2 right-2 flex gap-1">
+                                <span class="material-symbols-outlined text-[10px] text-green-500" title="Aktif">wifi</span>
+                            </div>
+                            <button onclick="openBulkModal('{{ store.id }}', '{{ store.name }}')" class="mt-2 text-xs text-blue-400 hover:underline block w-full">Toplu Eşle</button>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800 text-gray-300">
+                    {% for p in products %}
+                    <tr class="hover:bg-gray-800/30">
+                        <td class="p-4 sticky left-0 bg-[#192633] z-10"><p class="font-bold text-white">{{ p.name }}</p><p class="text-xs text-gray-500 font-mono">{{ p.sku }}</p></td>
+                        <td class="p-4 text-center">{{ p.stock }}</td>
+                        {% for store in stores %}
+                        <td class="p-4 text-center border-l border-gray-700">
+                            {% set link = p.stores.get(store.id) %}
+                            {% if link %}
+                                <button onclick="openModal('{{p.id}}', '{{store.id}}', '{{store.name}}', '{{link.code}}', '{{link.price}}')" class="w-full p-2 rounded bg-green-500/10 text-green-500 border border-green-500/30 hover:bg-green-500/20 transition"><span class="font-bold text-xs">EŞLEŞTİ</span><span class="block text-[10px]">{{ link.price }} ₺</span></button>
+                            {% else %}
+                                <button onclick="openModal('{{p.id}}', '{{store.id}}', '{{store.name}}', '', '')" class="w-full p-2 rounded bg-gray-800 text-gray-500 hover:bg-gray-700 transition"><span class="material-symbols-outlined text-sm">link_off</span></button>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% else %}<tr><td colspan="{{ stores|length + 2 }}" class="p-8 text-center text-gray-500">Ürün bulunamadı.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="addMarketModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl border border-gray-700 w-full max-w-md shadow-2xl">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">add_business</span> Yeni Mağaza Bağla</h2>
+            <form action="/add_marketplace" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Mağaza Adı (Görünen İsim)</label>
+                    <input type="text" name="store_name" placeholder="Örn: Trendyol Ana Mağaza" required class="w-full rounded bg-black/20 border-gray-600 text-white text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Pazaryeri Platformu</label>
+                    <select name="marketplace_type" class="w-full rounded bg-black/20 border-gray-600 text-white text-sm">
+                        <option value="Trendyol">Trendyol</option>
+                        <option value="Hepsiburada">Hepsiburada</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="N11">N11</option>
+                    </select>
+                </div>
+                
+                <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-3">
+                    <p class="text-[10px] text-blue-300 flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">lock</span> API Bilgileri (AES-256 ile şifrelenir)</p>
+                    <div>
+                        <input type="text" name="api_key" placeholder="API Key / Mağaza ID" required class="w-full rounded bg-black/20 border-gray-600 text-white text-xs font-mono">
+                    </div>
+                    <div>
+                        <input type="password" name="api_secret" placeholder="API Secret / Şifre" required class="w-full rounded bg-black/20 border-gray-600 text-white text-xs font-mono">
+                    </div>
+                    <div>
+                        <input type="text" name="merchant_id" placeholder="Satıcı ID (Opsiyonel)" class="w-full rounded bg-black/20 border-gray-600 text-white text-xs font-mono">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="this.closest('#addMarketModal').classList.add('hidden')" class="flex-1 py-2 border border-gray-600 rounded text-sm text-gray-400">İptal</button>
+                    <button class="flex-1 py-2 bg-primary hover:bg-blue-600 rounded text-sm font-bold shadow-lg shadow-blue-500/20">Bağlantıyı Kur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="integrationModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl border border-gray-700 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold flex items-center gap-2"><span id="modalStoreName" class="text-primary">...</span> Bağlantısı</h2><button onclick="document.getElementById('integrationModal').classList.add('hidden')" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button></div>
+            <form action="/save_integration" method="POST" class="space-y-4">
+                <input type="hidden" name="product_id" id="modalProdId"><input type="hidden" name="store_id" id="modalStoreId">
+                <div><label class="block text-sm text-gray-400 mb-1">Platform Barkodu</label><input type="text" name="remote_code" id="modalRemoteCode" required class="w-full rounded bg-black/20 border-gray-600 text-white font-mono"></div>
+                <div><label class="block text-sm text-gray-400 mb-1">Satış Fiyatı (₺)</label><input type="number" step="0.01" name="price" id="modalPrice" required class="w-full rounded bg-black/20 border-gray-600 text-white font-bold text-lg"></div>
+                <div class="flex items-center gap-2 bg-black/20 p-3 rounded border border-gray-700"><input type="checkbox" name="active" id="modalActive" checked class="rounded bg-gray-700 text-green-500 focus:ring-0"><label for="modalActive" class="text-sm cursor-pointer">Satışa Açık</label></div>
+                <button class="w-full py-3 bg-primary hover:bg-blue-600 rounded-lg font-bold text-white transition">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="bulkModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#192633] p-8 rounded-2xl border border-gray-700 w-full max-w-md shadow-2xl border-l-4 border-l-green-500">
+            <h2 class="text-xl font-bold mb-2">Toplu Eşleştirme</h2>
+            <p class="text-sm text-gray-400 mb-4">Henüz <span id="bulkMarketName" class="text-green-400 font-bold">...</span> ile eşleşmemiş tüm ürünleri otomatik bağlar.</p>
+            <form action="/bulk_link_marketplace" method="POST" class="space-y-4">
+    <input type="hidden" name="bulk_store_id" id="bulkMarketInput">
+    
+    <div>
+        <label class="block text-sm text-gray-400 mb-1">Fiyat Politikası (%)</label>
+        <p class="text-xs text-gray-500 mb-2">Envanter liste fiyatının üzerine ne kadar ekleyelim?</p>
+        <div class="flex items-center gap-2">
+            <input type="number" step="0.01" name="price_percentage" value="10" required class="w-full rounded bg-black/20 border-gray-600 text-white font-bold text-lg text-center">
+            <span class="text-xl text-gray-400">%</span>
+        </div>
+        <p class="text-[10px] text-gray-500 mt-1">Örn: <b>20</b> yazarsanız 100 TL'lik ürün 120 TL olur. <b>-10</b> yazarsanız 90 TL olur.</p>
+    </div>
+
+    <div class="flex gap-2">
+        <button type="button" onclick="this.closest('#bulkModal').classList.add('hidden')" class="flex-1 py-2 border border-gray-600 rounded text-gray-400">İptal</button>
+        <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded font-bold text-white">Uygula ve Bağla</button>
+    </div>
+</form>
+        </div>
+    </div>
+
+    <script>
+        setTimeout(()=>{document.querySelectorAll('.flash-message').forEach(e=>{e.classList.add('fade-out');setTimeout(()=>e.remove(),500)})},3000);
+        function openModal(prodId, storeId, storeName, code, price) {
+            document.getElementById('modalProdId').value = prodId; document.getElementById('modalStoreId').value = storeId; document.getElementById('modalStoreName').innerText = storeName; document.getElementById('modalRemoteCode').value = code; document.getElementById('modalPrice').value = price; document.getElementById('integrationModal').classList.remove('hidden');
+        }
+        function openBulkModal(storeId, storeName) { document.getElementById('bulkMarketInput').value = storeId; document.getElementById('bulkMarketName').innerText = storeName; document.getElementById('bulkModal').classList.remove('hidden'); }
+    </script>
+</body>
+</html>
