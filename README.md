@@ -50,3 +50,73 @@ source venv/bin/activate
 
 # Gerekli kütüphaneleri yükleyin
 pip install -r requirements.txt
+
+3. Veritabanı (PostgreSQL) Kurulumu
+Projenin şifreleme modüllerinin ve tablolarının çalışabilmesi için veritabanının doğru yapılandırılması gerekmektedir.
+
+PostgreSQL komut satırına (psql) veya pgAdmin'e giriş yapın.
+
+Proje için yeni bir veritabanı oluşturun:
+
+SQL
+CREATE DATABASE project_db;
+Oluşturduğunuz veritabanına bağlanın ve veri şifreleme işlemlerinde kullanılan pgcrypto eklentisini aktif edin:
+
+SQL
+\c project_db
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+Veritabanı tablolarını, tetikleyicileri (Triggers) ve saklı yordamları (Stored Procedures) oluşturmak için proje dizininde yer alan SQL dosyasını çalıştırın (Not: Eğer SQL dosyanızın adı db_setup.sql ise):
+
+Bash
+psql -U postgres -d project_db -f db_setup.sql
+
+4. Çevre Değişkenlerinin (Environment Variables) Ayarlanması
+Projenin kök dizininde bir .env dosyası oluşturun ve güvenlik/veritabanı bilgilerinizi buraya girin. app.py dosyasının bu bilgileri .env üzerinden okuduğundan emin olun.
+
+Kod snippet'i
+# Veritabanı Ayarları
+DB_HOST=localhost
+DB_NAME=project_db
+DB_USER=postgres
+DB_PASS=kendi_veritabani_sifren
+DB_PORT=5432
+
+# Flask ve Güvenlik Ayarları
+FLASK_SECRET_KEY=cok_gizli_flask_anahtari
+ENCRYPTION_KEY=b"AES_256_ICIN_GECERLI_BASE64_ANAHTARI_BURAYA="
+
+# Google OAuth (Opsiyonel - Google Girişi İçin)
+GOOGLE_CLIENT_ID=kendi_client_id_bilgin
+GOOGLE_CLIENT_SECRET=kendi_client_secret_bilgin
+5. Süper Admin Hesabının Oluşturulması
+Tablolar oluştuktan sonra, sisteme ilk girişi yapabilmek için gerekli ana firmayı ve Süper Admin kullanıcısını oluşturmalısınız.
+
+Bash
+python create_super_admin.py
+Bu komut başarıyla çalıştığında konsolda admin@firmaniz.com ve şifresi görüntülenecektir.
+
+6. Uygulamayı Başlatma
+Tüm kurulumlar tamamlandı. Flask sunucusunu başlatarak projeyi çalıştırabilirsiniz:
+
+Bash
+python app.py
+Tarayıcınızı açın ve http://127.0.0.1:5000 adresine giderek oluşturduğunuz admin bilgileri ile sisteme giriş yapın.
+
+📂 Proje Yapısı
+Plaintext
+online-marketplace-integration/
+│
+├── app.py                   # Flask ana uygulama dosyası
+├── create_super_admin.py    # İlk kurulum ve yetkilendirme betiği
+├── requirements.txt         # Python bağımlılık listesi
+├── db_setup.sql             # Tablolar, View'lar, Trigger ve SP'ler (Varsa)
+│
+├── templates/               # HTML şablonları (Tailwind CSS)
+│   ├── index.html           # Genel Bakış (Dashboard)
+│   ├── login.html           # Kullanıcı Giriş Ekranı
+│   ├── orders.html          # Sipariş Yönetimi
+│   ├── products.html        # Envanter ve Stok Yönetimi
+│   ├── integrations.html    # Pazaryeri Eşleştirme Sayfası
+│   └── settings.html        # Ayarlar ve Personel Yönetimi
+│
+└── README.md                # Proje dokümantasyonu
