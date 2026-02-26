@@ -13,6 +13,15 @@ Sistem; veri tutarsızlığı, stok yönetimi hataları ve operasyonel verimsizl
 * **Canlı Sistem Logları:** Arka plan işlemlerinin, hataların ve sipariş simülasyonlarının yönetim panelinden canlı (WebSocket/Polling) olarak izlenebilmesi.
 * **Toplu Entegrasyon & Excel:** XLSX formatında toplu ürün ekleme ve dışa aktarma (Export/Import).
 
+## 🛡️ Siber Güvenlik ve Veri İzolasyonu
+
+Proje, güvenli kodlama (secure coding) prensipleri gözetilerek tasarlanmış olup çok katmanlı bir güvenlik mimarisi sunar:
+
+* **Kriptografi (Data at Rest):** Kullanıcı parolaları geri döndürülemez `bcrypt` algoritması ile hashlenerek saklanır. Pazaryeri API anahtarları ve "Secret Key" gibi hassas veriler ise PostgreSQL `pgcrypto` eklentisiyle `AES-256` standartlarında şifrelenir.
+* **Kimlik Doğrulama (Authentication):** Geleneksel e-posta/parola girişinin yanı sıra, güvenli Google OAuth 2.0 entegrasyonu ve API isteklerinde JWT (JSON Web Token) tabanlı doğrulama altyapısı mevcuttur.
+* **Yetkilendirme ve İzolasyon (RBAC & Multi-Tenant):** Katı Rol Bazlı Erişim Kontrolü (RBAC) ile kullanıcılar sadece kendi yetki sınırlarında işlem yapabilir. Multi-Tenant (çoklu kiracı) yapısı, farklı firmaların verilerini birbirinden tamamen izole eder.
+* **Veritabanı Katmanı Güvenliği:** Uygulama (Backend) katmanı aşılsa dahi; negatif fiyat girilmesi, stok maniplasyonu veya "overselling" gibi kritik hatalar, veritabanı seviyesinde tanımlanmış `Check Constraints` ve `Triggers` ile engellenir.
+
 ## 🛠 Teknoloji Yığını
 
 * **Backend:** Python 3, Flask, psycopg2
