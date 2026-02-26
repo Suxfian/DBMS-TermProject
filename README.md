@@ -36,7 +36,7 @@ Terminal veya komut satırını açarak projeyi bilgisayarınıza indirin ve san
 
 ```bash
 # Projeyi klonlayın
-git clone [https://github.com/KULLANICI_ADIN/online-marketplace-integration.git](https://github.com/KULLANICI_ADIN/online-marketplace-integration.git)
+git clone [https://github.com/Suxfian/online-marketplace-integration.git](https://github.com/Suxfian/online-marketplace-integration.git)
 cd online-marketplace-integration
 
 # Sanal ortam oluşturun
@@ -51,20 +51,24 @@ source venv/bin/activate
 # Gerekli kütüphaneleri yükleyin
 pip install -r requirements.txt
 
-3. Veritabanı (PostgreSQL) Kurulumu
+````
+### 3. Veritabanı (PostgreSQL) Kurulumu
 Projenin şifreleme modüllerinin ve tablolarının çalışabilmesi için veritabanının doğru yapılandırılması gerekmektedir.
 
 PostgreSQL komut satırına (psql) veya pgAdmin'e giriş yapın.
 
 Proje için yeni bir veritabanı oluşturun:
 
-SQL
+```
 CREATE DATABASE project_db;
+````
+
 Oluşturduğunuz veritabanına bağlanın ve veri şifreleme işlemlerinde kullanılan pgcrypto eklentisini aktif edin:
 
-SQL
+````
 \c project_db
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+````
 Veritabanı tablolarını, tetikleyicileri (Triggers) ve saklı yordamları (Stored Procedures) oluşturmak için proje dizininde yer alan SQL dosyasını çalıştırın (Not: Eğer SQL dosyanızın adı db_setup.sql ise):
 
 Bash
