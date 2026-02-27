@@ -126,7 +126,8 @@ python app.py
 Tarayıcınızı açın ve http://127.0.0.1:5000 adresine giderek oluşturduğunuz admin bilgileri ile sisteme giriş yapın.
 
 ## 📂 Proje Yapısı
-Plaintext
+
+```text
 online-marketplace-integration/
 │
 ├── app.py                   # Flask ana uygulama dosyası
